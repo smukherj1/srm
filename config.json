@@ -1,0 +1,4 @@
+{
+    "db" : "~/.srm.db",
+    "resource_defs" : "~/.srm.d"
+}
