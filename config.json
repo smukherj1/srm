@@ -1,4 +1,4 @@
 {
-    "db" : "~/.srm.db",
-    "resource_defs" : "~/.srm.d"
+    "db_path" : "/home/suvanjan/.srm.sqlite3.db",
+    "resource_defs" : "/home/suvanjan/.srm.d"
 }

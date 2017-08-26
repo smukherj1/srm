@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import argparse
+import os
+
 import _srm_version
 import srm_util
 
@@ -9,6 +11,17 @@ import srm_util
 # provides help for that command
 ###############################################################
 def _cmd_get(args):
+    if len(args) == 0:
+        srm_util.err('The get command needs atleast one resource name')
+        srm_util.info(_help_get())
+        exit(1)
+    cur_environ = os.environ.copy()
+    resource_defs = srm_util.env().resource_defs
+    for resource_name in args:
+        resource_def = srm_util.get_resource_def(resource_name)
+        if resource_def is None:
+            srm_util.warn('Ignoring {} because a resource definition file was not found'.format(resource_name))
+            continue
     return
 
 def _help_get():
@@ -42,7 +55,7 @@ eg. 'src register gcc/7.2'
 '''
 
 # Table of supported commands initialized with the function that 
-# process them. This
+# process them.
 _CMD_TABLE = {
     'get' : _cmd_get,
     'info' : _cmd_info,
@@ -75,6 +88,7 @@ def _dispatch_cmd(cmd, args):
     else:
         if cmd not in _CMD_TABLE:
             srm_util.err('{} is not a recognized command'.format(cmd))
+            exit(1)
         srm_util.dbg('Dispatching command: "{}" with arguments {}'.format(cmd, args))
         _CMD_TABLE[cmd](args)
     return
@@ -94,7 +108,7 @@ if __name__ == '__main__':
     )
     p.add_argument(
         'cmd',
-        nargs=1,
+        nargs='?',
         help='The command to run. Try "srm list cmd" to list all commands'
     )
     p.add_argument(
@@ -105,6 +119,12 @@ if __name__ == '__main__':
     )
 
     args = p.parse_args()
+
+    # If no arguments were provided, just print the help and exit
+    if args.cmd is None:
+        p.print_help()
+        exit()
+
     srm_util.init(args)
 
-    _dispatch_cmd(args.cmd[0], args.args)
+    _dispatch_cmd(args.cmd, args.args)
