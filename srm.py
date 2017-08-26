@@ -31,8 +31,11 @@ def _cmd_get(args):
         added.append(resource_path)
         resource_def.get(srm_util, cur_environ)
     if added:
-        srm_util.info('Entering shell with resources: {}'.format(','.join(added)))
-        os.execve('/bin/bash', [], env=cur_environ)
+        if srm_util.env().args.dry_run:
+            srm_util.info('Would enter shell with resources: {}'.format(','.join(added)))
+        else:
+            srm_util.info('Entering shell with resources: {}'.format(','.join(added)))
+            os.execve('/bin/bash', [], env=cur_environ)
     return
 
 def _help_get():
@@ -116,6 +119,12 @@ if __name__ == '__main__':
     p.add_argument(
         '-c', '--config',
         help='Path to the json file specifying initial config'
+    )
+    p.add_argument(
+        '-d', '--dry-run',
+        dest='dry_run',
+        action='store_true',
+        help='Dry run the resource loader. Do not actually enter a new shell. Useful for unit testing'
     )
     p.add_argument(
         'cmd',
