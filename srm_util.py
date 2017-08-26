@@ -2,9 +2,10 @@ import logging
 import os
 import json
 import argparse
+import hashlib
 import importlib.util
 
-class _SrmEnv(object):
+class SrmEnv(object):
     """
     Convenience class caching references to frequently used
     utilities like command line arguments, configuration info
@@ -24,6 +25,8 @@ class _SrmEnv(object):
         # Path to resource definition python scripts
         self._resource_defs = None
         ########################################################
+        # Map from path to a python file to the module 
+        self._cached_modules = {}
 
     def set_args(self, args):
         assert self._args is None
@@ -45,12 +48,32 @@ class _SrmEnv(object):
         assert isinstance(resource_defs, str)
         self._resource_defs = resource_defs
 
+    def load_script(self, path):
+        mod_abs_path = os.path.abspath(path)
+        md5_hasher = hashlib.md5()
+        md5_hasher.update(mod_abs_path.encode('utf-8'))
+        hashed_path = md5_hasher.hexdigest()
+        if hashed_path in self._cached_modules:
+            return self._cached_modules[hashed_path]
+        # Now import the module
+        mod = None
+        import_spec = importlib.util.spec_from_file_location(hashed_path, mod_abs_path)
+        mod = importlib.util.module_from_spec(import_spec)
+        import_spec.loader.exec_module(mod)
+        self._cached_modules[hashed_path] = mod
+        return mod
+ 
+
     @property
     def args(self):
         return self._args
 
     @property
     def logger(self):
+        """
+        NOT TO BE USED OUTSIDE srm_util. Use the dbg, info, warn, crit,
+        and err functions in this module instead
+        """
         return self._logger
 
     @property
@@ -68,7 +91,7 @@ def init(args):
     global _env
     if _env is not None:
         raise RuntimeError('Initialization for util has already run!')
-    _env = _SrmEnv()
+    _env = SrmEnv()
     logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%y/%m/%d %H:%M:%S')
     _env.set_args(args)
     logger = logging.getLogger('srm')
@@ -125,8 +148,15 @@ def get_resource_def(resource_name):
     path = os.path.join(env().resource_defs, resource_name, 'srm_def.py')
     if not os.path.exists(path):
         return None
-    
-    return path
+    # Now we will try to import the file as is
+    mod = None
+    try:
+        mod = env().load_script(path)
+    except Exception as ierr:
+        err('Encountered exception trying to load resource definition {}'.format(resource_abs_path))
+        info('The exact error was: {}'.format(str(ierr)))
+        exit(1)
+    return mod
 ############################################################################
 # Functions local to this module
 ############################################################################

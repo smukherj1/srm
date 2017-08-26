@@ -17,11 +17,21 @@ def _cmd_get(args):
         exit(1)
     cur_environ = os.environ.copy()
     resource_defs = srm_util.env().resource_defs
+    added = []
     for resource_name in args:
+        if resource_name in added:
+            continue
         resource_def = srm_util.get_resource_def(resource_name)
         if resource_def is None:
             srm_util.warn('Ignoring {} because a resource definition file was not found'.format(resource_name))
             continue
+        # Call the 'get' function on the resource definition script to modify the
+        # current environment according to its need
+        resource_def.get(srm_util, cur_environ)
+        added.append(resource_name)
+    if added:
+        srm_util.info('Entering shell with resources: {}'.format(','.join(added)))
+        os.execve('/bin/bash', [], env=cur_environ)
     return
 
 def _help_get():
