@@ -107,7 +107,7 @@ def _dispatch_cmd(cmd, args):
     return
 
 
-if __name__ == '__main__':
+def main():
     p = argparse.ArgumentParser(description='Software Resource Manager {}'.format(_srm_version.VERSION_STR))
     p.add_argument(
         '-l', '--log',
@@ -147,3 +147,6 @@ if __name__ == '__main__':
     srm_util.init(args)
 
     _dispatch_cmd(args.cmd, args.args)
+
+if __name__ == '__main__':
+    main()
