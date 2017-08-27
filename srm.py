@@ -21,7 +21,6 @@ def _cmd_get(args):
     for resource_name in args:
         if resource_name in added:
             continue
-        added.append(resource_name)
         resource_def = srm_util.get_resource_def(resource_name)
         if resource_def is None:
             srm_util.warn('Ignoring {} because a resource definition file was not found'.format(resource_name))
@@ -29,6 +28,7 @@ def _cmd_get(args):
         # Call the 'get' function on the resource definition script to modify the
         # current environment according to its need
         resource_def.get(srm_util, cur_environ)
+        added.append(resource_name)
     if added:
         if srm_util.env().args.dry_run:
             srm_util.info('Would enter shell with resources: {}'.format(','.join(added)))
