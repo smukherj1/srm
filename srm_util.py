@@ -3,7 +3,9 @@ import os
 import json
 import argparse
 import hashlib
+import importlib
 import importlib.util
+import importlib.machinery
 
 class SrmEnv(object):
     """
@@ -57,9 +59,16 @@ class SrmEnv(object):
             return self._cached_modules[hashed_path]
         # Now import the module
         mod = None
-        import_spec = importlib.util.spec_from_file_location(hashed_path, mod_abs_path)
-        mod = importlib.util.module_from_spec(import_spec)
-        import_spec.loader.exec_module(mod)
+        dbg('Attempting to load resource definition: {}, hash: {}'.format(mod_abs_path, hashed_path))
+        try:
+            import_spec = importlib.util.spec_from_file_location(hashed_path, mod_abs_path) 
+            # Only supported in python 3.5 and above
+            mod = importlib.util.module_from_spec(import_spec)
+            import_spec.loader.exec_module(mod)
+        except AttributeError:
+            # Use older python3 import machinery
+            loader = importlib.machinery.SourceFileLoader(hashed_path, mod_abs_path)
+            mod = loader.load_module()
         self._cached_modules[hashed_path] = mod
         return mod
  

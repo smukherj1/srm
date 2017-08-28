@@ -34,7 +34,7 @@ def _cmd_get(args):
             srm_util.info('Would enter shell with resources: {}'.format(','.join(added)))
         else:
             srm_util.info('Entering shell with resources: {}'.format(','.join(added)))
-            os.execve('/bin/bash', [], env=cur_environ)
+            os.execve('/bin/bash', [], cur_environ)
     return
 
 def _help_get():
