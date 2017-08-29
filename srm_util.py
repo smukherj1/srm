@@ -1,3 +1,4 @@
+import platform
 import logging
 import os
 import json
@@ -52,9 +53,9 @@ class SrmEnv(object):
 
     def load_script(self, path):
         mod_abs_path = os.path.abspath(path)
-        md5_hasher = hashlib.md5()
-        md5_hasher.update(mod_abs_path.encode('utf-8'))
-        hashed_path = md5_hasher.hexdigest()
+        hasher = hashlib.sha256()
+        hasher.update(mod_abs_path.encode('utf-8'))
+        hashed_path = hasher.hexdigest()
         if hashed_path in self._cached_modules:
             return self._cached_modules[hashed_path]
         # Now import the module
@@ -109,6 +110,7 @@ def init(args):
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
+    dbg('Running with Python {}'.format(platform.python_version()))
     _load_initial_config()
 
 def args():

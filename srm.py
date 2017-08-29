@@ -25,15 +25,32 @@ def _cmd_get(args):
         if resource_def is None:
             srm_util.warn('Ignoring {} because a resource definition file was not found'.format(resource_name))
             continue
-        # Call the 'get' function on the resource definition script to modify the
-        # current environment according to its need
-        resource_def.get(srm_util, cur_environ)
-        added.append(resource_name)
+        # If this is a final resource, 'get' it and continue
+        if hasattr(resource_def, 'get'):
+            # Call the 'get' function on the resource definition script to modify the
+            # current environment according to its need
+            resource_def.get(srm_util, cur_environ)
+            added.append(resource_name)
+        # This may be a mapped resource
+        elif hasattr(resource_def, 'get_mapped'):
+            mapped_resource = resource_def.get_mapped()
+            mapped_res_def = srm_util.get_resource_def(mapped_resource)
+            if not hasattr(mapped_res_def, 'get'):
+                srm_util.err('{} must map to a final resource but it mapped to {}'.format(resource_name, mapped_resource))
+                srm_util.info('The resource definition file for {} did not define a get function'.format(mapped_resource))
+                exit(1)
+            mapped_res_def.get(srm_util, cur_environ)
+            added.append(mapped_resource)
+
+        else:
+            srm_util.err('{} is neither a final resource nor a mapped resource'.format(resource_name))
+            srm_util.info("Define a 'get' function to make it final resource. Define 'get_mapped' to map it to another resource")
+            exit(1)
     if added:
         if srm_util.env().args.dry_run:
-            srm_util.info('Would enter shell with resources: {}'.format(','.join(added)))
+            srm_util.info('Would enter shell with resources: {}'.format(', '.join(added)))
         else:
-            srm_util.info('Entering shell with resources: {}'.format(','.join(added)))
+            srm_util.info('Entering shell with resources: {}'.format(', '.join(added)))
             os.execve('/bin/bash', [], cur_environ)
     return
 
@@ -145,7 +162,6 @@ def main():
         exit()
 
     srm_util.init(args)
-
     _dispatch_cmd(args.cmd, args.args)
 
 if __name__ == '__main__':
